@@ -1,0 +1,12 @@
+1)header section should be collapsible.
+2)invoice date should be date picker
+3)height width quantity fields should be blank when focused
+4)when entering date in height it should accept to digits and
+focus should go to width column it should accept only two digits
+and focus should go to quantity.
+5)dont show sq.ft. column
+6)action column should have edit button and functionality.
+7)edit invoice should have invoice selection and it should be  functional
+
+
+use the HTML5 date input and then format it to DD/MM/YYYY when displaying and when saving? But the requirement is to enter in DD/MM/YYYY.

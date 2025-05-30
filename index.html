@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Invoice Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #fca311;
+            --dark: #14213d;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --border: #dee2e6;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --header-height: 70px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fb 0%, #e6f0ff 100%);
+            color: #333;
+            line-height: 1.6;
+            padding-top: var(--header-height);
+            min-height: 100vh;
+        }
+
+        /* Collapsible Header */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 0;
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: var(--header-height);
+            transition: height 0.3s ease;
+            overflow: hidden;
+        }
+
+        header.collapsed {
+            height: 50px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            height: var(--header-height);
+            transition: all 0.3s ease;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .logo i {
+            color: var(--warning);
+        }
+
+        .toggle-header {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-header:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 1.5rem;
+        }
+
+        nav a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        nav a:hover, nav a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem;
+            min-height: calc(100vh - 200px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .section {
+            padding: 2rem;
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .section-header {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--light-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.85rem 1.2rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        /* Table Styles */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .items-table th, .items-table td {
+            padding: 1.2rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .items-table th {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 500;
+        }
+
+        .items-table tr:nth-child(even) {
+            background-color: rgba(67, 97, 238, 0.03);
+        }
+
+        .items-table tr:hover {
+            background-color: rgba(67, 97, 238, 0.08);
+        }
+
+        .items-table input {
+            width: 100%;
+            padding: 0.65rem 0.8rem;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        .items-table .dimension-input {
+            max-width: 80px;
+            text-align: center;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0.85rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .btn i {
+            font-size: 0.9em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(67, 97, 238, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning), #e85d04);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #b5179e);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.6rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .add-item-btn {
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        /* Totals */
+        .totals-row {
+            background-color: var(--dark);
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .totals-row td {
+            padding: 1.2rem;
+        }
+
+        /* Invoice Table */
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .invoice-table th, .invoice-table td {
+            padding: 1.2rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .invoice-table th {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 500;
+        }
+
+        .invoice-table tr:nth-child(even) {
+            background-color: rgba(67, 97, 238, 0.03);
+        }
+
+        .invoice-table tr:hover {
+            background-color: rgba(67, 97, 238, 0.08);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .pdf-btn {
+            background: linear-gradient(135deg, var(--danger), #b5179e);
+        }
+
+        .edit-btn {
+            background: linear-gradient(135deg, var(--warning), #e85d04);
+        }
+
+        .delete-btn {
+            background: linear-gradient(135deg, var(--gray), #495057);
+        }
+
+        /* Empty State */
+        .no-invoices {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray);
+            font-style: italic;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        /* Invoice Selection */
+        .invoice-selector {
+            background: var(--light);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .invoice-selector label {
+            font-size: 1.1rem;
+            margin-bottom: 0.8rem;
+            display: block;
+        }
+
+        .select-invoice {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .select-invoice select {
+            flex: 1;
+            min-width: 300px;
+            padding: 0.8rem;
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 992px) {
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            nav ul {
+                gap: 0.8rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0 15px;
+            }
+            
+            nav ul {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+            
+            nav a {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.9rem;
+            }
+            
+            .items-table, .invoice-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 0.4rem;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+            
+            .main-content {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .form-row {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .form-row .form-group {
+                min-width: 100%;
+            }
+            
+            .logo {
+                font-size: 1.4rem;
+            }
+            
+            .section-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Collapsible Header -->
+    <header id="main-header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Invoice Manager</span>
+            </div>
+            
+            <button class="toggle-header" id="toggle-header-btn">
+                <i class="fas fa-chevron-up"></i>
+            </button>
+            
+            <nav>
+                <ul>
+                    <li><a href="#" class="nav-link active" data-target="create-invoice"><i class="fas fa-plus-circle"></i> Create</a></li>
+                    <li><a href="#" class="nav-link" data-target="view-invoices"><i class="fas fa-list"></i> View</a></li>
+                    <li><a href="#" class="nav-link" data-target="edit-invoice"><i class="fas fa-edit"></i> Edit</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Create Invoice Section -->
+            <section id="create-invoice" class="section active">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-plus-circle"></i> Create New Invoice</h2>
+                    <div class="invoice-stats">
+                        <span><i class="fas fa-users"></i> Total Customers: <span id="customer-count">0</span></span>
+                        <span><i class="fas fa-file-invoice"></i> Total Invoices: <span id="invoice-count">0</span></span>
+                    </div>
+                </div>
+                
+                <form id="invoice-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customer-name"><i class="fas fa-user"></i> Customer Name *</label>
+                            <input type="text" id="customer-name" required placeholder="Enter customer name">
+                        </div>
+                        <div class="form-group">
+                            <label for="phone"><i class="fas fa-phone"></i> Phone Number *</label>
+                            <input type="tel" id="phone" required placeholder="Enter phone number">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="invoice-date"><i class="fas fa-calendar-alt"></i> Invoice Date *</label>
+                            <input type="text" id="invoice-date" class="date-picker" placeholder="DD/MM/YYYY" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="price-per-sqft"><i class="fas fa-tag"></i> Price per Sq. Ft. (₹) *</label>
+                            <input type="number" id="price-per-sqft" min="0" step="0.01" required placeholder="Enter price">
+                        </div>
+                    </div>
+                    
+                    <div class="section-header">
+                        <h3 class="section-title"><i class="fas fa-cubes"></i> Items</h3>
+                        <button type="button" class="btn add-item-btn">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                    </div>
+                    
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Height (in)</th>
+                                <th>Width (in)</th>
+                                <th>Quantity</th>
+                                <th>Total Sq. Ft.</th>
+                                <th>Amount (₹)</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-container">
+                            <tr class="item-row">
+                                <td><input type="text" class="item-desc" placeholder="Item description"></td>
+                                <td><input type="number" class="item-height dimension-input" min="0" max="99" placeholder="00" value=""></td>
+                                <td><input type="number" class="item-width dimension-input" min="0" max="99" placeholder="00" value=""></td>
+                                <td><input type="number" class="item-quantity" min="1" value="1" placeholder="1"></td>
+                                <td class="item-total-sqft">0.00</td>
+                                <td class="item-amount">₹0.00</td>
+                                <td>
+                                    <button type="button" class="btn btn-danger btn-sm remove-item">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="totals-row">
+                                <td colspan="3" style="text-align: right;"><strong>Total:</strong></td>
+                                <td id="total-quantity">0</td>
+                                <td id="total-total-sqft">0.00</td>
+                                <td id="total-amount">₹0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    
+                    <div class="form-group">
+                        <label for="notes"><i class="fas fa-sticky-note"></i> Additional Notes</label>
+                        <textarea id="notes" rows="3" placeholder="Enter any additional notes..."></textarea>
+                    </div>
+                    
+                    <div style="display: flex; gap: 15px; margin-top: 30px; flex-wrap: wrap;">
+                        <button type="reset" class="btn btn-danger">
+                            <i class="fas fa-times"></i> Reset Form
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Invoice
+                        </button>
+                    </div>
+                </form>
+            </section>
+            
+            <!-- View Invoices Section -->
+            <section id="view-invoices" class="section">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-list"></i> Invoice List</h2>
+                    <div class="form-group" style="min-width: 300px;">
+                        <input type="text" id="search-invoice" placeholder="Search by customer name or phone...">
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Phone</th>
+                                <th>Total Sq. Ft.</th>
+                                <th>Total Amount</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoices-list">
+                            <!-- Invoices will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="no-invoices" class="no-invoices">
+                    <i class="fas fa-file-invoice" style="font-size: 3rem; margin-bottom: 1rem; color: #4361ee;"></i>
+                    <h3>No Invoices Found</h3>
+                    <p>Create your first invoice using the "Create Invoice" tab</p>
+                    <button class="btn btn-primary mt-3" id="create-first-invoice">
+                        <i class="fas fa-plus-circle"></i> Create Invoice
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Edit Invoice Section -->
+            <section id="edit-invoice" class="section">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-edit"></i> Edit Invoice</h2>
+                </div>
+                
+                <div class="invoice-selector">
+                    <label for="invoice-select"><i class="fas fa-search"></i> Select Invoice to Edit</label>
+                    <div class="select-invoice">
+                        <select id="invoice-select" class="form-control">
+                            <option value="">-- Select an invoice --</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                        <button class="btn btn-primary" id="load-invoice-btn">
+                            <i class="fas fa-file-import"></i> Load Invoice
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="edit-invoice-container">
+                    <div class="no-invoices">
+                        <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; color: #4361ee;"></i>
+                        <h3>Select an Invoice to Edit</h3>
+                        <p>Choose an invoice from the dropdown above and click "Load Invoice"</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="logo">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Invoice Management System</span>
+            </div>
+            <p>Simplify your billing process with our easy-to-use invoice management solution</p>
+            <div class="footer-links">
+                <a href="#"><i class="fas fa-info-circle"></i> About</a>
+                <a href="#"><i class="fas fa-envelope"></i> Contact</a>
+                <a href="#"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                <a href="#"><i class="fas fa-question-circle"></i> Help</a>
+            </div>
+            <p>&copy; 2023 Invoice Manager. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize jsPDF
+        const { jsPDF } = window.jspdf;
+        
+        // Sample invoices data
+        let invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+        let currentEditInvoiceId = null;
+        
+        // Update stats
+        function updateStats() {
+            const customerCount = new Set(invoices.map(inv => inv.customerName)).size;
+            document.getElementById('customer-count').textContent = customerCount;
+            document.getElementById('invoice-count').textContent = invoices.length;
+        }
+        
+        // Collapsible header functionality
+        const header = document.getElementById('main-header');
+        const toggleBtn = document.getElementById('toggle-header-btn');
+        let lastScrollPosition = 0;
+        
+        toggleBtn.addEventListener('click', function() {
+            header.classList.toggle('collapsed');
+            toggleBtn.querySelector('i').classList.toggle('fa-chevron-up');
+            toggleBtn.querySelector('i').classList.toggle('fa-chevron-down');
+        });
+        
+        // Navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = this.getAttribute('data-target');
+                
+                // Update active nav link
+                document.querySelectorAll('.nav-link').forEach(nav => nav.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show target section
+                document.querySelectorAll('.section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.getElementById(target).classList.add('active');
+                
+                // If going to view invoices, refresh the list
+                if (target === 'view-invoices') {
+                    renderInvoices();
+                }
+                
+                // If going to edit, populate the dropdown
+                if (target === 'edit-invoice') {
+                    populateInvoiceSelect();
+                }
+            });
+        });
+        
+        // Date picker functionality
+        document.querySelectorAll('.date-picker').forEach(picker => {
+            picker.addEventListener('focus', function() {
+                if (!this.dataset.picker) {
+                    this.type = 'date';
+                    this.dataset.picker = 'true';
+                }
+            });
+            
+            picker.addEventListener('blur', function() {
+                if (this.value === '') {
+                    this.type = 'text';
+                    this.placeholder = 'DD/MM/YYYY';
+                }
+            });
+        });
+        
+        // Add new item row
+        document.querySelector('.add-item-btn').addEventListener('click', function() {
+            const container = document.getElementById('items-container');
+            const newRow = document.createElement('tr');
+            newRow.className = 'item-row';
+            newRow.innerHTML = `
+                <td><input type="text" class="item-desc" placeholder="Item description"></td>
+                <td><input type="number" class="item-height dimension-input" min="0" max="99" placeholder="00" value=""></td>
+                <td><input type="number" class="item-width dimension-input" min="0" max="99" placeholder="00" value=""></td>
+                <td><input type="number" class="item-quantity" min="1" value="1" placeholder="1"></td>
+                <td class="item-total-sqft">0.00</td>
+                <td class="item-amount">₹0.00</td>
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm remove-item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            container.appendChild(newRow);
+            
+            // Add event listeners to the new inputs
+            addItemRowEventListeners(newRow);
+            
+            // Recalculate totals
+            calculateTotals();
+        });
+        
+        // Add event listeners to item row
+        function addItemRowEventListeners(row) {
+            const heightInput = row.querySelector('.item-height');
+            const widthInput = row.querySelector('.item-width');
+            const quantityInput = row.querySelector('.item-quantity');
+            
+            // Clear inputs on focus
+            [heightInput, widthInput].forEach(input => {
+                input.addEventListener('focus', function() {
+                    if (this.value === "0") this.value = "";
+                });
+                
+                input.addEventListener('blur', function() {
+                    if (this.value === "") this.value = "0";
+                    calculateItemRow(row);
+                    calculateTotals();
+                });
+            });
+            
+            // Auto-tab functionality for dimensions
+            heightInput.addEventListener('input', function() {
+                if (this.value.length >= 2) {
+                    widthInput.focus();
+                }
+                calculateItemRow(row);
+                calculateTotals();
+            });
+            
+            widthInput.addEventListener('input', function() {
+                if (this.value.length >= 2) {
+                    quantityInput.focus();
+                }
+                calculateItemRow(row);
+                calculateTotals();
+            });
+            
+            quantityInput.addEventListener('input', function() {
+                calculateItemRow(row);
+                calculateTotals();
+            });
+            
+            row.querySelector('.remove-item').addEventListener('click', function() {
+                row.remove();
+                calculateTotals();
+            });
+        }
+        
+        // Calculate values for a single item row
+        function calculateItemRow(row) {
+            const height = parseFloat(row.querySelector('.item-height').value) || 0;
+            const width = parseFloat(row.querySelector('.item-width').value) || 0;
+            const quantity = parseInt(row.querySelector('.item-quantity').value) || 0;
+            const pricePerSqft = parseFloat(document.getElementById('price-per-sqft').value) || 0;
+            
+            // Calculate square feet (height * width / 144)
+            const sqft = (height * width) / 144;
+            const totalSqft = sqft * quantity;
+            const amount = totalSqft * pricePerSqft;
+            
+            row.querySelector('.item-total-sqft').textContent = totalSqft.toFixed(2);
+            row.querySelector('.item-amount').textContent = `₹${amount.toFixed(2)}`;
+        }
+        
+        // Calculate totals for all items
+        function calculateTotals() {
+            let totalQuantity = 0;
+            let totalTotalSqft = 0;
+            let totalAmount = 0;
+            
+            document.querySelectorAll('.item-row').forEach(row => {
+                totalQuantity += parseInt(row.querySelector('.item-quantity').value) || 0;
+                totalTotalSqft += parseFloat(row.querySelector('.item-total-sqft').textContent) || 0;
+                const amount = parseFloat(row.querySelector('.item-amount').textContent.replace('₹', '')) || 0;
+                totalAmount += amount;
+            });
+            
+            document.getElementById('total-quantity').textContent = totalQuantity;
+            document.getElementById('total-total-sqft').textContent = totalTotalSqft.toFixed(2);
+            document.getElementById('total-amount').textContent = `₹${totalAmount.toFixed(2)}`;
+        }
+        
+        // Initialize event listeners for existing rows
+        document.querySelectorAll('.item-row').forEach(row => {
+            addItemRowEventListeners(row);
+        });
+        
+        // Price per sqft change should update all items
+        document.getElementById('price-per-sqft').addEventListener('input', function() {
+            document.querySelectorAll('.item-row').forEach(row => {
+                calculateItemRow(row);
+            });
+            calculateTotals();
+        });
+        
+        // Form submission - create new invoice
+        document.getElementById('invoice-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const customerName = document.getElementById('customer-name').value;
+            const phone = document.getElementById('phone').value;
+            const invoiceDate = document.getElementById('invoice-date').value;
+            const pricePerSqft = parseFloat(document.getElementById('price-per-sqft').value);
+            const notes = document.getElementById('notes').value;
+            
+            // Validate date format
+            if (!invoiceDate) {
+                alert('Please select a valid invoice date');
+                return;
+            }
+            
+            // Collect items
+            const items = [];
+            document.querySelectorAll('.item-row').forEach(row => {
+                const desc = row.querySelector('.item-desc').value || 'Item';
+                const height = parseFloat(row.querySelector('.item-height').value) || 0;
+                const width = parseFloat(row.querySelector('.item-width').value) || 0;
+                const quantity = parseInt(row.querySelector('.item-quantity').value) || 0;
+                const totalSqft = parseFloat(row.querySelector('.item-total-sqft').textContent) || 0;
+                const amount = parseFloat(row.querySelector('.item-amount').textContent.replace('₹', '')) || 0;
+                
+                items.push({
+                    desc,
+                    height,
+                    width,
+                    quantity,
+                    totalSqft,
+                    amount
+                });
+            });
+            
+            // Calculate totals
+            const totalQuantity = parseInt(document.getElementById('total-quantity').textContent) || 0;
+            const totalTotalSqft = parseFloat(document.getElementById('total-total-sqft').textContent) || 0;
+            const totalAmount = parseFloat(document.getElementById('total-amount').textContent.replace('₹', '')) || 0;
+            
+            // Create invoice object
+            const invoice = {
+                id: Date.now(), // Unique ID based on timestamp
+                customerName,
+                phone,
+                invoiceDate,
+                pricePerSqft,
+                items,
+                totalQuantity,
+                totalTotalSqft,
+                totalAmount,
+                notes,
+                createdAt: new Date().toISOString()
+            };
+            
+            // Add to invoices array
+            invoices.push(invoice);
+            
+            // Save to localStorage
+            localStorage.setItem('invoices', JSON.stringify(invoices));
+            
+            // Update stats
+            updateStats();
+            
+            // Show success message
+            alert(`Invoice #${invoice.id} created successfully!`);
+            
+            // Reset form
+            this.reset();
+            
+            // Clear items except the first one
+            const itemsContainer = document.getElementById('items-container');
+            while (itemsContainer.children.length > 1) {
+                itemsContainer.removeChild(itemsContainer.lastChild);
+            }
+            
+            // Reset first row
+            const firstRow = itemsContainer.querySelector('.item-row');
+            firstRow.querySelector('.item-height').value = '';
+            firstRow.querySelector('.item-width').value = '';
+            firstRow.querySelector('.item-quantity').value = 1;
+            firstRow.querySelector('.item-desc').value = '';
+            calculateItemRow(firstRow);
+            calculateTotals();
+            
+            // Reset date picker
+            const datePicker = document.getElementById('invoice-date');
+            datePicker.type = 'text';
+            datePicker.placeholder = 'DD/MM/YYYY';
+            
+            // Switch to view invoices tab
+            document.querySelector('.nav-link[data-target="view-invoices"]').click();
+        });
+        
+        // Render invoices in the table
+        function renderInvoices(filter = '') {
+            const container = document.getElementById('invoices-list');
+            const noInvoices = document.getElementById('no-invoices');
+            
+            // Clear existing rows
+            container.innerHTML = '';
+            
+            // Filter invoices
+            const filteredInvoices = invoices.filter(invoice => {
+                if (!filter) return true;
+                const search = filter.toLowerCase();
+                return invoice.customerName.toLowerCase().includes(search) || 
+                       invoice.phone.includes(search);
+            });
+            
+            if (filteredInvoices.length === 0) {
+                noInvoices.style.display = 'block';
+                return;
+            }
+            
+            noInvoices.style.display = 'none';
+            
+            // Add rows
+            filteredInvoices.forEach(invoice => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${invoice.id}</td>
+                    <td>${invoice.invoiceDate}</td>
+                    <td>${invoice.customerName}</td>
+                    <td>${invoice.phone}</td>
+                    <td>${invoice.totalTotalSqft.toFixed(2)}</td>
+                    <td>₹${invoice.totalAmount.toFixed(2)}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm edit-btn" data-id="${invoice.id}">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-sm pdf-btn" data-id="${invoice.id}">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                        <button class="btn btn-sm delete-btn" data-id="${invoice.id}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                `;
+                container.appendChild(row);
+            });
+            
+            // Add event listeners
+            document.querySelectorAll('.pdf-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    generatePDF(id);
+                });
+            });
+            
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    selectInvoiceForEdit(id);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    deleteInvoice(id);
+                });
+            });
+        }
+        
+        // Search invoices
+        document.getElementById('search-invoice').addEventListener('input', function() {
+            renderInvoices(this.value);
+        });
+        
+        // Generate PDF for an invoice
+        function generatePDF(invoiceId) {
+            const invoice = invoices.find(inv => inv.id == invoiceId);
+            if (!invoice) return;
+            
+            // Create a temporary div to hold the invoice content
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.padding = '20px';
+            pdfContainer.style.fontFamily = 'Arial, sans-serif';
+            pdfContainer.style.width = '210mm';
+            pdfContainer.style.background = 'white';
+            pdfContainer.style.boxShadow = '0 0 10px rgba(0,0,0,0.1)';
+            pdfContainer.innerHTML = `
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #4361ee; margin-bottom: 5px;">INVOICE</h1>
+                    <p style="font-size: 18px; color: #666;">#${invoice.id}</p>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+                    <div>
+                        <h3>Bill To:</h3>
+                        <p><strong>${invoice.customerName}</strong></p>
+                        <p>${invoice.phone}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p><strong>Invoice Date:</strong> ${invoice.invoiceDate}</p>
+                        <p><strong>Created At:</strong> ${new Date(invoice.createdAt).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                    <thead>
+                        <tr style="background-color: #f5f7fb;">
+                            <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Description</th>
+                            <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Height (in)</th>
+                            <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Width (in)</th>
+                            <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Qty</th>
+                            <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Total Sq. Ft.</th>
+                            <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Amount (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${invoice.items.map(item => `
+                            <tr>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.desc}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.height}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.width}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.quantity}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.totalSqft.toFixed(2)}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">₹${item.amount.toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background-color: #f5f7fb; font-weight: bold;">
+                            <td colspan="4" style="padding: 10px; text-align: right;">Total:</td>
+                            <td style="padding: 10px;">${invoice.totalTotalSqft.toFixed(2)}</td>
+                            <td style="padding: 10px;">₹${invoice.totalAmount.toFixed(2)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+                
+                <div style="margin-bottom: 20px;">
+                    <p><strong>Price per Sq. Ft.:</strong> ₹${invoice.pricePerSqft.toFixed(2)}</p>
+                </div>
+                
+                ${invoice.notes ? `
+                <div style="margin-top: 30px;">
+                    <h3>Notes:</h3>
+                    <p>${invoice.notes}</p>
+                </div>
+                ` : ''}
+                
+                <div style="margin-top: 50px; text-align: center; color: #666; font-size: 14px;">
+                    <p>Thank you for your business!</p>
+                    <p>Invoice generated on ${new Date().toLocaleDateString()}</p>
+                </div>
+            `;
+            
+            // Append to body
+            document.body.appendChild(pdfContainer);
+            
+            // Generate PDF
+            html2canvas(pdfContainer, { scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgWidth = 210; // A4 width in mm
+                const imgHeight = canvas.height * imgWidth / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                pdf.save(`invoice-${invoice.id}.pdf`);
+                
+                // Remove the temporary div
+                document.body.removeChild(pdfContainer);
+            });
+        }
+        
+        // Populate invoice select dropdown
+        function populateInvoiceSelect() {
+            const select = document.getElementById('invoice-select');
+            select.innerHTML = '<option value="">-- Select an invoice --</option>';
+            
+            invoices.forEach(invoice => {
+                const option = document.createElement('option');
+                option.value = invoice.id;
+                option.textContent = `#${invoice.id} - ${invoice.customerName} (${invoice.invoiceDate})`;
+                select.appendChild(option);
+            });
+        }
+        
+        // Load invoice for editing
+        document.getElementById('load-invoice-btn').addEventListener('click', function() {
+            const invoiceId = document.getElementById('invoice-select').value;
+            if (!invoiceId) {
+                alert('Please select an invoice first');
+                return;
+            }
+            
+            selectInvoiceForEdit(invoiceId);
+        });
+        
+        // Select invoice for editing
+        function selectInvoiceForEdit(invoiceId) {
+            const invoice = invoices.find(inv => inv.id == invoiceId);
+            if (!invoice) return;
+            
+            currentEditInvoiceId = invoiceId;
+            
+            const editContainer = document.getElementById('edit-invoice-container');
+            editContainer.innerHTML = `
+                <form id="edit-invoice-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-customer-name">Customer Name *</label>
+                            <input type="text" id="edit-customer-name" value="${invoice.customerName}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-phone">Phone Number *</label>
+                            <input type="tel" id="edit-phone" value="${invoice.phone}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-invoice-date">Invoice Date *</label>
+                            <input type="text" id="edit-invoice-date" class="date-picker" value="${invoice.invoiceDate}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-price-per-sqft">Price per Sq. Ft. (₹) *</label>
+                            <input type="number" id="edit-price-per-sqft" min="0" step="0.01" value="${invoice.pricePerSqft}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="section-header">
+                        <h3 class="section-title">Items</h3>
+                        <button type="button" class="btn add-edit-item-btn">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                    </div>
+                    
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Height (in)</th>
+                                <th>Width (in)</th>
+                                <th>Quantity</th>
+                                <th>Total Sq. Ft.</th>
+                                <th>Amount (₹)</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="edit-items-container">
+                            ${invoice.items.map(item => `
+                                <tr class="edit-item-row">
+                                    <td><input type="text" class="edit-item-desc" value="${item.desc}"></td>
+                                    <td><input type="number" class="edit-item-height dimension-input" min="0" max="99" value="${item.height || ''}"></td>
+                                    <td><input type="number" class="edit-item-width dimension-input" min="0" max="99" value="${item.width || ''}"></td>
+                                    <td><input type="number" class="edit-item-quantity" min="1" value="${item.quantity}"></td>
+                                    <td class="edit-item-total-sqft">${item.totalSqft.toFixed(2)}</td>
+                                    <td class="edit-item-amount">₹${item.amount.toFixed(2)}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger btn-sm remove-edit-item">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                        <tfoot>
+                            <tr class="totals-row">
+                                <td colspan="3" style="text-align: right;"><strong>Total:</strong></td>
+                                <td id="edit-total-quantity">${invoice.totalQuantity}</td>
+                                <td id="edit-total-total-sqft">${invoice.totalTotalSqft.toFixed(2)}</td>
+                                <td id="edit-total-amount">₹${invoice.totalAmount.toFixed(2)}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    
+                    <div class="form-group">
+                        <label for="edit-notes">Additional Notes</label>
+                        <textarea id="edit-notes" rows="3">${invoice.notes || ''}</textarea>
+                    </div>
+                    
+                    <div style="display: flex; gap: 15px; margin-top: 30px;">
+                        <button type="button" class="btn btn-danger" id="cancel-edit">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Update Invoice
+                        </button>
+                    </div>
+                </form>
+            `;
+            
+            // Add event listeners to edit items
+            document.querySelectorAll('.edit-item-row').forEach(row => {
+                addEditItemRowEventListeners(row);
+            });
+            
+            // Add new item button
+            document.querySelector('.add-edit-item-btn').addEventListener('click', function() {
+                const container = document.getElementById('edit-items-container');
+                const newRow = document.createElement('tr');
+                newRow.className = 'edit-item-row';
+                newRow.innerHTML = `
+                    <td><input type="text" class="edit-item-desc" placeholder="Item description"></td>
+                    <td><input type="number" class="edit-item-height dimension-input" min="0" max="99" placeholder="00" value=""></td>
+                    <td><input type="number" class="edit-item-width dimension-input" min="0" max="99" placeholder="00" value=""></td>
+                    <td><input type="number" class="edit-item-quantity" min="1" value="1" placeholder="1"></td>
+                    <td class="edit-item-total-sqft">0.00</td>
+                    <td class="edit-item-amount">₹0.00</td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm remove-edit-item">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                container.appendChild(newRow);
+                addEditItemRowEventListeners(newRow);
+                calculateEditTotals();
+            });
+            
+            // Price per sqft change listener
+            document.getElementById('edit-price-per-sqft').addEventListener('input', function() {
+                document.querySelectorAll('.edit-item-row').forEach(row => {
+                    calculateEditItemRow(row);
+                });
+                calculateEditTotals();
+            });
+            
+            // Cancel edit
+            document.getElementById('cancel-edit').addEventListener('click', function() {
+                document.getElementById('edit-invoice-container').innerHTML = `
+                    <div class="no-invoices">
+                        <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; color: #4361ee;"></i>
+                        <h3>Select an Invoice to Edit</h3>
+                        <p>Choose an invoice from the dropdown above and click "Load Invoice"</p>
+                    </div>
+                `;
+                document.getElementById('invoice-select').value = '';
+            });
+            
+            // Submit edit form
+            document.getElementById('edit-invoice-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                updateInvoice();
+            });
+        }
+        
+        // Add event listeners to edit item row
+        function addEditItemRowEventListeners(row) {
+            const heightInput = row.querySelector('.edit-item-height');
+            const widthInput = row.querySelector('.edit-item-width');
+            const quantityInput = row.querySelector('.edit-item-quantity');
+            
+            // Clear inputs on focus
+            [heightInput, widthInput].forEach(input => {
+                input.addEventListener('focus', function() {
+                    if (this.value === "0") this.value = "";
+                });
+                
+                input.addEventListener('blur', function() {
+                    if (this.value === "") this.value = "0";
+                    calculateEditItemRow(row);
+                    calculateEditTotals();
+                });
+            });
+            
+            // Auto-tab functionality for dimensions
+            heightInput.addEventListener('input', function() {
+                if (this.value.length >= 2) {
+                    widthInput.focus();
+                }
+                calculateEditItemRow(row);
+                calculateEditTotals();
+            });
+            
+            widthInput.addEventListener('input', function() {
+                if (this.value.length >= 2) {
+                    quantityInput.focus();
+                }
+                calculateEditItemRow(row);
+                calculateEditTotals();
+            });
+            
+            quantityInput.addEventListener('input', function() {
+                calculateEditItemRow(row);
+                calculateEditTotals();
+            });
+            
+            row.querySelector('.remove-edit-item').addEventListener('click', function() {
+                row.remove();
+                calculateEditTotals();
+            });
+        }
+        
+        // Calculate edit item row
+        function calculateEditItemRow(row) {
+            const height = parseFloat(row.querySelector('.edit-item-height').value) || 0;
+            const width = parseFloat(row.querySelector('.edit-item-width').value) || 0;
+            const quantity = parseInt(row.querySelector('.edit-item-quantity').value) || 0;
+            const pricePerSqft = parseFloat(document.getElementById('edit-price-per-sqft').value) || 0;
+            
+            const sqft = (height * width) / 144;
+            const totalSqft = sqft * quantity;
+            const amount = totalSqft * pricePerSqft;
+            
+            row.querySelector('.edit-item-total-sqft').textContent = totalSqft.toFixed(2);
+            row.querySelector('.edit-item-amount').textContent = `₹${amount.toFixed(2)}`;
+        }
+        
+        // Calculate edit totals
+        function calculateEditTotals() {
+            let totalQuantity = 0;
+            let totalTotalSqft = 0;
+            let totalAmount = 0;
+            
+            document.querySelectorAll('.edit-item-row').forEach(row => {
+                totalQuantity += parseInt(row.querySelector('.edit-item-quantity').value) || 0;
+                totalTotalSqft += parseFloat(row.querySelector('.edit-item-total-sqft').textContent) || 0;
+                const amount = parseFloat(row.querySelector('.edit-item-amount').textContent.replace('₹', '')) || 0;
+                totalAmount += amount;
+            });
+            
+            document.getElementById('edit-total-quantity').textContent = totalQuantity;
+            document.getElementById('edit-total-total-sqft').textContent = totalTotalSqft.toFixed(2);
+            document.getElementById('edit-total-amount').textContent = `₹${totalAmount.toFixed(2)}`;
+        }
+        
+        // Update invoice
+        function updateInvoice() {
+            const invoiceIndex = invoices.findIndex(inv => inv.id == currentEditInvoiceId);
+            if (invoiceIndex === -1) return;
+            
+            const customerName = document.getElementById('edit-customer-name').value;
+            const phone = document.getElementById('edit-phone').value;
+            const invoiceDate = document.getElementById('edit-invoice-date').value;
+            const pricePerSqft = parseFloat(document.getElementById('edit-price-per-sqft').value);
+            const notes = document.getElementById('edit-notes').value;
+            
+            // Validate date
+            if (!invoiceDate) {
+                alert('Please select a valid invoice date');
+                return;
+            }
+            
+            // Collect items
+            const items = [];
+            document.querySelectorAll('.edit-item-row').forEach(row => {
+                const desc = row.querySelector('.edit-item-desc').value || 'Item';
+                const height = parseFloat(row.querySelector('.edit-item-height').value) || 0;
+                const width = parseFloat(row.querySelector('.edit-item-width').value) || 0;
+                const quantity = parseInt(row.querySelector('.edit-item-quantity').value) || 0;
+                const totalSqft = parseFloat(row.querySelector('.edit-item-total-sqft').textContent) || 0;
+                const amount = parseFloat(row.querySelector('.edit-item-amount').textContent.replace('₹', '')) || 0;
+                
+                items.push({
+                    desc,
+                    height,
+                    width,
+                    quantity,
+                    totalSqft,
+                    amount
+                });
+            });
+            
+            // Calculate totals
+            const totalQuantity = parseInt(document.getElementById('edit-total-quantity').textContent) || 0;
+            const totalTotalSqft = parseFloat(document.getElementById('edit-total-total-sqft').textContent) || 0;
+            const totalAmount = parseFloat(document.getElementById('edit-total-amount').textContent.replace('₹', '')) || 0;
+            
+            // Update invoice object
+            invoices[invoiceIndex] = {
+                ...invoices[invoiceIndex],
+                customerName,
+                phone,
+                invoiceDate,
+                pricePerSqft,
+                items,
+                totalQuantity,
+                totalTotalSqft,
+                totalAmount,
+                notes
+            };
+            
+            // Save to localStorage
+            localStorage.setItem('invoices', JSON.stringify(invoices));
+            
+            // Update stats
+            updateStats();
+            
+            // Show success message
+            alert(`Invoice #${currentEditInvoiceId} updated successfully!`);
+            
+            // Reset edit container
+            document.getElementById('edit-invoice-container').innerHTML = `
+                <div class="no-invoices">
+                    <i class="fas fa-check-circle" style="font-size: 3rem; margin-bottom: 1rem; color: #2ecc71;"></i>
+                    <h3>Invoice Updated Successfully</h3>
+                    <p>Invoice #${currentEditInvoiceId} has been updated</p>
+                </div>
+            `;
+            
+            // Clear dropdown
+            document.getElementById('invoice-select').value = '';
+            
+            // Update view
+            renderInvoices();
+        }
+        
+        // Delete invoice
+        function deleteInvoice(invoiceId) {
+            if (!confirm('Are you sure you want to delete this invoice?')) return;
+            
+            invoices = invoices.filter(inv => inv.id != invoiceId);
+            localStorage.setItem('invoices', JSON.stringify(invoices));
+            updateStats();
+            renderInvoices();
+        }
+        
+        // Create first invoice button
+        document.getElementById('create-first-invoice').addEventListener('click', function() {
+            document.querySelector('.nav-link[data-target="create-invoice"]').click();
+        });
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStats();
+            renderInvoices();
+            populateInvoiceSelect();
+        });
+    </script>
+</body>
+</html>
